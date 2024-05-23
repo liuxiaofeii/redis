@@ -1,5 +1,5 @@
 /* Linux epoll(2) based ae.c module
- *
+ * 【关键文件】
  * Copyright (c) 2009-2012, Salvatore Sanfilippo <antirez at gmail dot com>
  * All rights reserved.
  *
@@ -45,7 +45,10 @@ static int aeApiCreate(aeEventLoop *eventLoop) {
         zfree(state);
         return -1;
     }
+
+    // linux内核函数：epoll_create
     state->epfd = epoll_create(1024); /* 1024 is just a hint for the kernel */
+
     if (state->epfd == -1) {
         zfree(state->events);
         zfree(state);
@@ -83,7 +86,9 @@ static int aeApiAddEvent(aeEventLoop *eventLoop, int fd, int mask) {
     if (mask & AE_READABLE) ee.events |= EPOLLIN;
     if (mask & AE_WRITABLE) ee.events |= EPOLLOUT;
     ee.data.fd = fd;
-    if (epoll_ctl(state->epfd,op,fd,&ee) == -1) return -1;
+
+    if (epoll_ctl(state->epfd,op,fd,&ee) == -1) return -1;// linux内核函数：epoll_ctl
+
     return 0;
 }
 
@@ -109,8 +114,10 @@ static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
     aeApiState *state = eventLoop->apidata;
     int retval, numevents = 0;
 
+    // linux内核函数：epoll_wait
     retval = epoll_wait(state->epfd,state->events,eventLoop->setsize,
             tvp ? (tvp->tv_sec*1000 + tvp->tv_usec/1000) : -1);
+
     if (retval > 0) {
         int j;
 
